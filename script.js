@@ -14,8 +14,12 @@ function loadCSV() {
         complete: function(results) {
             players = results.data.filter(p => p.Player && p.Salary);
 
-            // Convert salary to number
-            players.forEach(p => p.Salary = Number(p.Salary));
+            // Convert salary to number and remove commas/dollar signs
+            players.forEach(p => {
+                if (p.Salary) {
+                    p.Salary = Number(p.Salary.replace(/[\$,]/g, ''));
+                }
+            });
 
             renderPlayers();
             updateCap();
