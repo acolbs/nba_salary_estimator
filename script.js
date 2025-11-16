@@ -2,6 +2,8 @@ let players = [];
 let roster = [];
 const SALARY_CAP = 150000000;
 
+// ---------------- Utility Functions ----------------
+
 function money(n) {
     return "$" + Number(n).toLocaleString("en-US", { maximumFractionDigits: 0 });
 }
@@ -27,7 +29,8 @@ function formatValuePct(valuePct) {
     return `${sign}${valuePct.toFixed(1)}%`;
 }
 
-// Load ACE_MODEL.csv
+// ---------------- CSV Loading ----------------
+
 function loadCSV() {
     Papa.parse("ACE_MODEL.csv", {
         download: true,
@@ -66,6 +69,7 @@ function loadCSV() {
             renderPlayers();
             updateCap();
             updateRosterSummary();
+            renderSalaryChart(); // <-- chart rendered after players loaded
         },
         error: function(error) {
             console.error("Error loading ACE_MODEL.csv:", error);
@@ -73,7 +77,8 @@ function loadCSV() {
     });
 }
 
-// Render players table
+// ---------------- Render Functions ----------------
+
 function renderPlayers(list = players) {
     const tbody = document.querySelector("#playersTable tbody");
     tbody.innerHTML = "";
@@ -94,9 +99,33 @@ function renderPlayers(list = players) {
         `;
         tbody.appendChild(tr);
     });
+    renderSalaryChart(); // <-- also update chart when rendering players
 }
 
-// Add player
+function renderRoster() {
+    const tbody = document.querySelector("#rosterTable tbody");
+    tbody.innerHTML = "";
+
+    roster.forEach((p, i) => {
+        const tr = document.createElement("tr");
+        const valueColor = getValueColor(p.ValuePct);
+        const valueText = formatValuePct(p.ValuePct);
+
+        tr.innerHTML = `
+            <td>${p.Player}</td>
+            <td>${p.Tm}</td>
+            <td>${p.Pos || "N/A"}</td>
+            <td>${money(p.SALARY)}</td>
+            <td>${money(p.ACE)}</td>
+            <td class="${valueColor}" title="Real: ${money(p.SALARY)} | ACE: ${money(p.ACE)}">${valueText}</td>
+            <td><button class="remove" onclick="removePlayer(${i})">X</button></td>
+        `;
+        tbody.appendChild(tr);
+    });
+}
+
+// ---------------- Player Manipulation ----------------
+
 function addPlayerObj(playerName) {
     const index = players.findIndex(p => p.Player === playerName);
     if (index === -1) return;
@@ -123,39 +152,12 @@ function addPlayerObj(playerName) {
     updateRosterSummary();
 }
 
-// Render roster
-function renderRoster() {
-    const tbody = document.querySelector("#rosterTable tbody");
-    tbody.innerHTML = "";
-
-    roster.forEach((p, i) => {
-        const tr = document.createElement("tr");
-        const valueColor = getValueColor(p.ValuePct);
-        const valueText = formatValuePct(p.ValuePct);
-
-        tr.innerHTML = `
-            <td>${p.Player}</td>
-            <td>${p.Tm}</td>
-            <td>${p.Pos || "N/A"}</td>
-            <td>${money(p.SALARY)}</td>
-            <td>${money(p.ACE)}</td>
-            <td class="${valueColor}" title="Real: ${money(p.SALARY)} | ACE: ${money(p.ACE)}">${valueText}</td>
-            <td><button class="remove" onclick="removePlayer(${i})">X</button></td>
-        `;
-        tbody.appendChild(tr);
-    });
-}
-
-// Remove player and re-insert into sorted players list
 function removePlayer(i) {
     const player = roster[i];
     roster.splice(i, 1);
 
-    // Add back to main players list
     players.push(player);
-
-    // Sort players by ACE descending (or ascending if you prefer)
-    players.sort((a, b) => b.ACE - a.ACE);
+    players.sort((a, b) => b.ACE - a.ACE); // sorted re-insert
 
     renderPlayers();
     renderRoster();
@@ -163,13 +165,15 @@ function removePlayer(i) {
     updateRosterSummary();
 }
 
-// Update salary cap
+// ---------------- Cap ----------------
+
 function updateCap() {
     const used = roster.reduce((t, p) => t + p.ACE, 0);
     document.getElementById("capRemaining").textContent = money(SALARY_CAP - used);
 }
 
-// Filters/Search
+// ---------------- Filters ----------------
+
 function applyFilters() {
     const query = document.getElementById("searchPlayer").value.toLowerCase();
     const salaryOperator = document.getElementById("salaryOperator").value;
@@ -182,7 +186,6 @@ function applyFilters() {
 
     if (query) filtered = filtered.filter(p => p.Player.toLowerCase().includes(query));
 
-    // Salary filter uses ACE now
     if (!isNaN(salaryValue) && salaryValue > 0) {
         if (salaryOperator === ">=") filtered = filtered.filter(p => p.ACE >= salaryValue);
         else if (salaryOperator === "<=") filtered = filtered.filter(p => p.ACE <= salaryValue);
@@ -205,7 +208,6 @@ function applyFilters() {
     renderPlayers(filtered);
 }
 
-// Reset filters
 function resetFilters() {
     document.getElementById("salaryValue").value = "";
     document.getElementById("salaryOperator").value = ">=";
@@ -218,7 +220,8 @@ function resetFilters() {
     renderPlayers();
 }
 
-// Roster summary
+// ---------------- Roster Summary ----------------
+
 function updateRosterSummary() {
     document.getElementById("totalPlayers").textContent = roster.length;
     document.getElementById("pgCount").textContent = roster.filter(p => p.Pos === "PG").length;
@@ -238,10 +241,61 @@ function updateRosterSummary() {
     }
 }
 
-// Event listeners
+// ---------------- Event Listeners ----------------
+
 document.getElementById("searchPlayer").addEventListener("input", applyFilters);
 document.getElementById("applyFiltersBtn").addEventListener("click", applyFilters);
 document.getElementById("resetFiltersBtn").addEventListener("click", resetFilters);
 
-// Load CSV on page load
 window.addEventListener("DOMContentLoaded", loadCSV);
+
+// ---------------- Salary Chart ----------------
+
+function renderSalaryChart() {
+    const ctx = document.getElementById('salaryChart').getContext('2d');
+
+    const dataPoints = players.map(p => ({
+        x: p.SALARY,
+        y: p.ACE,
+        label: p.Player
+    }));
+
+    if (window.salaryChartInstance) {
+        window.salaryChartInstance.destroy();
+    }
+
+    window.salaryChartInstance = new Chart(ctx, {
+        type: 'scatter',
+        data: {
+            datasets: [{
+                label: 'Player Salary vs ACE',
+                data: dataPoints,
+                backgroundColor: 'rgba(75, 192, 192, 0.7)',
+                pointRadius: 6
+            }]
+        },
+        options: {
+            responsive: true,
+            plugins: {
+                tooltip: {
+                    callbacks: {
+                        label: function(context) {
+                            const label = context.raw.label;
+                            const real = money(context.raw.x);
+                            const ace = money(context.raw.y);
+                            return `${label}: Real ${real}, ACE ${ace}`;
+                        }
+                    }
+                }
+            },
+            scales: {
+                x: {
+                    title: { display: true, text: 'Current Salary' }
+                },
+                y: {
+                    title: { display: true, text: 'ACE Estimated Salary' }
+                }
+            }
+        }
+    });
+}
