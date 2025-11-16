@@ -18,12 +18,44 @@ h1 {
     font-size: 28px;
 }
 
-.container {
-    display: flex;
-    gap: 20px;
+/* Tabs */
+.tab {
+    overflow: hidden;
+    border-bottom: 1px solid #333;
+    background-color: #1e1e1e;
+}
+
+.tab button {
+    background-color: inherit;
+    border: none;
+    padding: 10px 20px;
+    cursor: pointer;
+    color: #fff;
+    font-weight: bold;
+}
+
+.tab button:hover {
+    background-color: #2a2a2a;
+}
+
+.tab button.active {
+    border-bottom: 3px solid #2196F3;
+}
+
+/* Tab Content */
+.tabcontent {
+    display: none;
     padding: 20px;
 }
 
+/* Container for roster tab */
+.container {
+    display: flex;
+    gap: 20px;
+    padding: 0;
+}
+
+/* Panels */
 .left, .right {
     background-color: #1e1e1e;
     padding: 20px;
@@ -133,11 +165,6 @@ tr:hover {
     margin-top: 10px;
 }
 
-.filter-buttons button {
-    padding: 6px 12px;
-    cursor: pointer;
-}
-
 .salary-filter {
     display: flex;
     gap: 5px;
@@ -181,4 +208,10 @@ tr:hover {
     font-size: 16px;
     padding: 2px 6px;
     border-radius: 3px;
+}
+
+/* Chart Tab */
+#graphTab canvas {
+    width: 100% !important;
+    height: auto !important;
 }

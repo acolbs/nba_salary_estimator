@@ -1,24 +1,31 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <title>NBA Salary Tool</title>
-    <link rel="stylesheet" href="style.css">
+<meta charset="UTF-8">
+<title>NBA Salary Tool</title>
+<link rel="stylesheet" href="style.css">
 
-    <!-- CSV Parser -->
-    <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
-    
-    <style>
-        /* Value color coding */
-        .excellent-value { color: #00ff00; font-weight: bold; }
-        .good-value { color: #90ee90; }
-        .fair-value { color: #ffffff; }
-        .overpaid { color: #ffb347; }
-        .very-overpaid { color: #ff4444; font-weight: bold; }
-    </style>
+<!-- CSV Parser -->
+<script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
+<!-- Chart.js -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
-    <!-- JS -->
-    <script src="script.js" defer></script>
+<style>
+    /* Value color coding */
+    .excellent-value { color: #00ff00; font-weight: bold; }
+    .good-value { color: #90ee90; }
+    .fair-value { color: #ffffff; }
+    .overpaid { color: #ffb347; }
+    .very-overpaid { color: #ff4444; font-weight: bold; }
+
+    /* Tabs */
+    .tab { overflow: hidden; border-bottom: 1px solid #ccc; margin-bottom: 10px; }
+    .tab button { background-color: inherit; border: none; padding: 10px 20px; cursor: pointer; }
+    .tab button.active { border-bottom: 3px solid #2196F3; font-weight: bold; }
+    .tabcontent { display: none; }
+</style>
+
+<script src="script.js" defer></script>
 </head>
 <body>
 
@@ -33,99 +40,112 @@
     </p>
 </header>
 
-<div class="container">
-    <!-- LEFT PANEL: PLAYER LIST -->
-    <div class="left">
-        <h2>All Players</h2>
-        <input type="text" id="searchPlayer" placeholder="Search players..." />
+<div class="tab">
+    <button class="tablink" onclick="openTab('rosterTab', this)">Roster Builder</button>
+    <button class="tablink" onclick="openTab('graphTab', this)">Salary Graph</button>
+</div>
 
-        <div id="filters">
-            <div class="filter-group">
-                <label>Salary:</label>
-                <div class="salary-filter">
-                    <select id="salaryOperator">
-                        <option value=">=">&ge;</option>
-                        <option value="<=">&le;</option>
+<!-- Roster Builder Tab -->
+<div id="rosterTab" class="tabcontent">
+    <div class="container">
+        <!-- LEFT PANEL: PLAYER LIST -->
+        <div class="left">
+            <h2>All Players</h2>
+            <input type="text" id="searchPlayer" placeholder="Search players..." />
+
+            <div id="filters">
+                <div class="filter-group">
+                    <label>Salary:</label>
+                    <div class="salary-filter">
+                        <select id="salaryOperator">
+                            <option value=">=">&ge;</option>
+                            <option value="<=">&le;</option>
+                        </select>
+                        <input type="number" id="salaryValue" placeholder="Enter salary" />
+                    </div>
+                </div>
+
+                <div class="filter-group">
+                    <label>Value:</label>
+                    <select id="valueFilter">
+                        <option value="all">All Players</option>
+                        <option value="underpaid">Underpaid (Best Value)</option>
+                        <option value="fair">Fair Value</option>
+                        <option value="overpaid">Overpaid</option>
                     </select>
-                    <input type="number" id="salaryValue" placeholder="Enter salary" />
+                </div>
+
+                <div class="filter-group">
+                    <label>Position:</label>
+                    <div id="positionFilter">
+                        <label><input type="checkbox" value="PG"> PG</label>
+                        <label><input type="checkbox" value="SG"> SG</label>
+                        <label><input type="checkbox" value="SF"> SF</label>
+                        <label><input type="checkbox" value="PF"> PF</label>
+                        <label><input type="checkbox" value="C"> C</label>
+                    </div>
+                </div>
+
+                <div class="filter-buttons">
+                    <button id="applyFiltersBtn">Apply Filters</button>
+                    <button id="resetFiltersBtn">Reset Filters</button>
                 </div>
             </div>
 
-            <div class="filter-group">
-                <label>Value:</label>
-                <select id="valueFilter">
-                    <option value="all">All Players</option>
-                    <option value="underpaid">Underpaid (Best Value)</option>
-                    <option value="fair">Fair Value</option>
-                    <option value="overpaid">Overpaid</option>
-                </select>
-            </div>
-
-            <div class="filter-group">
-                <label>Position:</label>
-                <div id="positionFilter">
-                    <label><input type="checkbox" value="PG"> PG</label>
-                    <label><input type="checkbox" value="SG"> SG</label>
-                    <label><input type="checkbox" value="SF"> SF</label>
-                    <label><input type="checkbox" value="PF"> PF</label>
-                    <label><input type="checkbox" value="C"> C</label>
-                </div>
-            </div>
-
-            <div class="filter-buttons">
-                <button id="applyFiltersBtn">Apply Filters</button>
-                <button id="resetFiltersBtn">Reset Filters</button>
-            </div>
+            <table id="playersTable">
+                <thead>
+                    <tr>
+                        <th>Player</th>
+                        <th>Team</th>
+                        <th>Pos</th>
+                        <th>Salary</th>
+                        <th>Value</th>
+                        <th>Add</th>
+                    </tr>
+                </thead>
+                <tbody></tbody>
+            </table>
         </div>
 
-        <table id="playersTable">
-            <thead>
-                <tr>
-                    <th>Player</th>
-                    <th>Team</th>
-                    <th>Pos</th>
-                    <th>Salary</th>
-                    <th>Value</th>
-                    <th>Add</th>
-                </tr>
-            </thead>
-            <tbody></tbody>
-        </table>
-    </div>
+        <!-- RIGHT PANEL: ROSTER -->
+        <div class="right">
+            <h2>Your Roster (Max 10)</h2>
+            <p><strong>Salary Cap:</strong> $150,000,000</p>
+            <p><strong>Remaining:</strong> <span id="capRemaining">$150,000,000</span></p>
+            <div id="rosterSummary">
+                <p>Total Players: <span id="totalPlayers">0</span></p>
+                <p><strong>Average Value:</strong> <span id="avgValue">0.0%</span></p>
+                <ul>
+                    <li>PG: <span id="pgCount">0</span></li>
+                    <li>SG: <span id="sgCount">0</span></li>
+                    <li>SF: <span id="sfCount">0</span></li>
+                    <li>PF: <span id="pfCount">0</span></li>
+                    <li>C: <span id="cCount">0</span></li>
+                </ul>
+            </div>
 
-    <!-- RIGHT PANEL: ROSTER -->
-    <div class="right">
-        <h2>Your Roster (Max 10)</h2>
-        <p><strong>Salary Cap:</strong> $150,000,000</p>
-        <p><strong>Remaining:</strong> <span id="capRemaining">$150,000,000</span></p>
-        <div id="rosterSummary">
-            <p>Total Players: <span id="totalPlayers">0</span></p>
-            <p><strong>Average Value:</strong> <span id="avgValue">0.0%</span></p>
-            <ul>
-                <li>PG: <span id="pgCount">0</span></li>
-                <li>SG: <span id="sgCount">0</span></li>
-                <li>SF: <span id="sfCount">0</span></li>
-                <li>PF: <span id="pfCount">0</span></li>
-                <li>C: <span id="cCount">0</span></li>
-            </ul>
+            <table id="rosterTable">
+                <thead>
+                    <tr>
+                        <th>Player</th>
+                        <th>Team</th>
+                        <th>Pos</th>
+                        <th>Salary</th>
+                        <th>Value</th>
+                        <th>Remove</th>
+                    </tr>
+                </thead>
+                <tbody></tbody>
+            </table>
         </div>
-
-        <table id="rosterTable">
-            <thead>
-                <tr>
-                    <th>Player</th>
-                    <th>Team</th>
-                    <th>Pos</th>
-                    <th>Salary</th>
-                    <th>Value</th>
-                    <th>Remove</th>
-                </tr>
-            </thead>
-            <tbody></tbody>
-        </table>
     </div>
 </div>
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-<canvas id="salaryChart" width="600" height="400"></canvas>
+
+<!-- Salary Graph Tab -->
+<div id="graphTab" class="tabcontent">
+    <h2>Salary vs ACE Graph</h2>
+    <canvas id="salaryChart" width="800" height="500"></canvas>
+</div>
+
 </body>
 </html>

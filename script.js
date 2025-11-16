@@ -1,20 +1,18 @@
+// ---------------- Constants ----------------
 let players = [];
 let roster = [];
-const SALARY_CAP = 150000000;
+const SALARY_CAP = 150_000_000;
 
 // ---------------- Utility Functions ----------------
-
 function money(n) {
     return "$" + Number(n).toLocaleString("en-US", { maximumFractionDigits: 0 });
 }
 
-// Calculate value percentage (negative = underpaid/good value, positive = overpaid)
 function calculateValuePct(realSalary, estimatedSalary) {
     if (!estimatedSalary || estimatedSalary === 0) return 0;
     return ((realSalary - estimatedSalary) / estimatedSalary) * 100;
 }
 
-// Get color class based on value
 function getValueColor(valuePct) {
     if (valuePct < -20) return "excellent-value"; 
     if (valuePct < -10) return "good-value";      
@@ -23,83 +21,62 @@ function getValueColor(valuePct) {
     return "very-overpaid";                       
 }
 
-// Format value percentage
 function formatValuePct(valuePct) {
     const sign = valuePct > 0 ? "+" : "";
     return `${sign}${valuePct.toFixed(1)}%`;
 }
 
 // ---------------- CSV Loading ----------------
-
 function loadCSV() {
     Papa.parse("ACE_MODEL.csv", {
         download: true,
         header: true,
         skipEmptyLines: true,
         complete: function(data) {
-            console.log("Loaded ACE_MODEL.csv");
-
             players = data.data.map(p => {
-                const playerName = (p.Player || "").trim();
-
-                const salaryStr = (p.SALARY || "").replace(/["$,\s]/g, '').trim();
-                const aceStr = (p.ACE || "").replace(/["$,\s]/g, '').trim();
-
-                const salary = Number(salaryStr);
-                const ace = Number(aceStr);
-
-                const team = (p.Team || p.Tm || "").trim();
-                const pos = (p.Pos || "").trim();
-
+                const salary = Number((p.SALARY || "").replace(/["$,\s]/g, '').trim());
+                const ace = Number((p.ACE || "").replace(/["$,\s]/g, '').trim());
                 const valuePct = calculateValuePct(salary, ace);
 
                 return {
-                    Player: playerName,
-                    Tm: team,
-                    Pos: pos,
+                    Player: (p.Player || "").trim(),
+                    Tm: (p.Team || p.Tm || "").trim(),
+                    Pos: (p.Pos || "").trim(),
                     SALARY: salary,
                     ACE: isNaN(ace) ? 0 : ace,
                     ValuePct: valuePct
                 };
             }).filter(p => p.Player && p.SALARY > 0 && p.ACE > 0);
 
-            console.log("Processed players:", players.slice(0, 10));
-            console.log("Total players loaded:", players.length);
-
             renderPlayers();
             updateCap();
             updateRosterSummary();
-            renderSalaryChart(); // <-- chart rendered after players loaded
+            renderSalaryChart();
         },
-        error: function(error) {
-            console.error("Error loading ACE_MODEL.csv:", error);
-        }
+        error: console.error
     });
 }
 
 // ---------------- Render Functions ----------------
-
 function renderPlayers(list = players) {
     const tbody = document.querySelector("#playersTable tbody");
     tbody.innerHTML = "";
 
     list.forEach(p => {
         const tr = document.createElement("tr");
-        const valueColor = getValueColor(p.ValuePct);
-        const valueText = formatValuePct(p.ValuePct);
-
         tr.innerHTML = `
             <td>${p.Player}</td>
             <td>${p.Tm || "N/A"}</td>
             <td>${p.Pos || "N/A"}</td>
             <td>${money(p.SALARY)}</td>
             <td>${money(p.ACE)}</td>
-            <td class="${valueColor}" title="Real: ${money(p.SALARY)} | ACE: ${money(p.ACE)}">${valueText}</td>
+            <td class="${getValueColor(p.ValuePct)}" title="Real: ${money(p.SALARY)} | ACE: ${money(p.ACE)}">${formatValuePct(p.ValuePct)}</td>
             <td><button class="add" onclick="addPlayerObj('${p.Player.replace(/'/g, "\\'")}')">Add</button></td>
         `;
         tbody.appendChild(tr);
     });
-    renderSalaryChart(); // <-- also update chart when rendering players
+
+    renderSalaryChart();
 }
 
 function renderRoster() {
@@ -108,16 +85,13 @@ function renderRoster() {
 
     roster.forEach((p, i) => {
         const tr = document.createElement("tr");
-        const valueColor = getValueColor(p.ValuePct);
-        const valueText = formatValuePct(p.ValuePct);
-
         tr.innerHTML = `
             <td>${p.Player}</td>
             <td>${p.Tm}</td>
             <td>${p.Pos || "N/A"}</td>
             <td>${money(p.SALARY)}</td>
             <td>${money(p.ACE)}</td>
-            <td class="${valueColor}" title="Real: ${money(p.SALARY)} | ACE: ${money(p.ACE)}">${valueText}</td>
+            <td class="${getValueColor(p.ValuePct)}" title="Real: ${money(p.SALARY)} | ACE: ${money(p.ACE)}">${formatValuePct(p.ValuePct)}</td>
             <td><button class="remove" onclick="removePlayer(${i})">X</button></td>
         `;
         tbody.appendChild(tr);
@@ -125,7 +99,6 @@ function renderRoster() {
 }
 
 // ---------------- Player Manipulation ----------------
-
 function addPlayerObj(playerName) {
     const index = players.findIndex(p => p.Player === playerName);
     if (index === -1) return;
@@ -133,15 +106,8 @@ function addPlayerObj(playerName) {
     const player = players[index];
     const used = roster.reduce((t, p) => t + p.ACE, 0);
 
-    if (roster.length >= 10) {
-        alert("Roster is full! Maximum 10 players allowed.");
-        return;
-    }
-
-    if (used + player.ACE > SALARY_CAP) {
-        alert("Not enough cap space! This would exceed the salary cap.");
-        return;
-    }
+    if (roster.length >= 10) return alert("Roster is full!");
+    if (used + player.ACE > SALARY_CAP) return alert("Not enough cap space!");
 
     roster.push(player);
     players.splice(index, 1);
@@ -157,7 +123,7 @@ function removePlayer(i) {
     roster.splice(i, 1);
 
     players.push(player);
-    players.sort((a, b) => b.ACE - a.ACE); // sorted re-insert
+    players.sort((a, b) => b.ACE - a.ACE);
 
     renderPlayers();
     renderRoster();
@@ -166,32 +132,27 @@ function removePlayer(i) {
 }
 
 // ---------------- Cap ----------------
-
 function updateCap() {
     const used = roster.reduce((t, p) => t + p.ACE, 0);
     document.getElementById("capRemaining").textContent = money(SALARY_CAP - used);
 }
 
 // ---------------- Filters ----------------
-
 function applyFilters() {
     const query = document.getElementById("searchPlayer").value.toLowerCase();
     const salaryOperator = document.getElementById("salaryOperator").value;
     const salaryValue = Number(document.getElementById("salaryValue").value);
     const valueFilter = document.getElementById("valueFilter").value;
-    const positionCheckboxes = document.querySelectorAll("#positionFilter input[type='checkbox']");
-    const positions = Array.from(positionCheckboxes).filter(cb => cb.checked).map(cb => cb.value);
+    const positions = Array.from(document.querySelectorAll("#positionFilter input[type='checkbox']"))
+        .filter(cb => cb.checked).map(cb => cb.value);
 
     let filtered = [...players];
 
     if (query) filtered = filtered.filter(p => p.Player.toLowerCase().includes(query));
-
     if (!isNaN(salaryValue) && salaryValue > 0) {
-        if (salaryOperator === ">=") filtered = filtered.filter(p => p.ACE >= salaryValue);
-        else if (salaryOperator === "<=") filtered = filtered.filter(p => p.ACE <= salaryValue);
+        filtered = filtered.filter(p => salaryOperator === ">=" ? p.ACE >= salaryValue : p.ACE <= salaryValue);
     }
-
-    if (positions.length > 0) filtered = filtered.filter(p => positions.includes(p.Pos));
+    if (positions.length) filtered = filtered.filter(p => positions.includes(p.Pos));
 
     if (valueFilter !== "all") {
         filtered = filtered.filter(p => {
@@ -212,45 +173,39 @@ function resetFilters() {
     document.getElementById("salaryValue").value = "";
     document.getElementById("salaryOperator").value = ">=";
     document.getElementById("valueFilter").value = "all";
-
-    const positionCheckboxes = document.querySelectorAll("#positionFilter input[type='checkbox']");
-    positionCheckboxes.forEach(cb => cb.checked = false);
-
+    document.querySelectorAll("#positionFilter input[type='checkbox']").forEach(cb => cb.checked = false);
     document.getElementById("searchPlayer").value = "";
     renderPlayers();
 }
 
 // ---------------- Roster Summary ----------------
-
 function updateRosterSummary() {
+    const count = pos => roster.filter(p => p.Pos === pos).length;
     document.getElementById("totalPlayers").textContent = roster.length;
-    document.getElementById("pgCount").textContent = roster.filter(p => p.Pos === "PG").length;
-    document.getElementById("sgCount").textContent = roster.filter(p => p.Pos === "SG").length;
-    document.getElementById("sfCount").textContent = roster.filter(p => p.Pos === "SF").length;
-    document.getElementById("pfCount").textContent = roster.filter(p => p.Pos === "PF").length;
-    document.getElementById("cCount").textContent = roster.filter(p => p.Pos === "C").length;
+    document.getElementById("pgCount").textContent = count("PG");
+    document.getElementById("sgCount").textContent = count("SG");
+    document.getElementById("sfCount").textContent = count("SF");
+    document.getElementById("pfCount").textContent = count("PF");
+    document.getElementById("cCount").textContent = count("C");
 
+    const avgValueEl = document.getElementById("avgValue");
     if (roster.length > 0) {
         const avgValue = roster.reduce((sum, p) => sum + p.ValuePct, 0) / roster.length;
-        const avgValueEl = document.getElementById("avgValue");
         avgValueEl.textContent = formatValuePct(avgValue);
         avgValueEl.className = getValueColor(avgValue);
     } else {
-        document.getElementById("avgValue").textContent = "0.0%";
-        document.getElementById("avgValue").className = "";
+        avgValueEl.textContent = "0.0%";
+        avgValueEl.className = "";
     }
 }
 
 // ---------------- Event Listeners ----------------
-
 document.getElementById("searchPlayer").addEventListener("input", applyFilters);
 document.getElementById("applyFiltersBtn").addEventListener("click", applyFilters);
 document.getElementById("resetFiltersBtn").addEventListener("click", resetFilters);
-
 window.addEventListener("DOMContentLoaded", loadCSV);
 
 // ---------------- Salary Chart ----------------
-
 function renderSalaryChart() {
     const ctx = document.getElementById('salaryChart').getContext('2d');
 
@@ -260,42 +215,40 @@ function renderSalaryChart() {
         label: p.Player
     }));
 
-    if (window.salaryChartInstance) {
-        window.salaryChartInstance.destroy();
-    }
+    if (window.salaryChartInstance) window.salaryChartInstance.destroy();
 
     window.salaryChartInstance = new Chart(ctx, {
         type: 'scatter',
-        data: {
-            datasets: [{
-                label: 'Player Salary vs ACE',
-                data: dataPoints,
-                backgroundColor: 'rgba(75, 192, 192, 0.7)',
-                pointRadius: 6
-            }]
-        },
+        data: { datasets: [{ label: 'Player Salary vs ACE', data: dataPoints, backgroundColor: 'rgba(75,192,192,0.7)', pointRadius: 6 }] },
         options: {
             responsive: true,
             plugins: {
                 tooltip: {
                     callbacks: {
-                        label: function(context) {
-                            const label = context.raw.label;
-                            const real = money(context.raw.x);
-                            const ace = money(context.raw.y);
-                            return `${label}: Real ${real}, ACE ${ace}`;
-                        }
+                        label: c => `${c.raw.label}: Real ${money(c.raw.x)}, ACE ${money(c.raw.y)}`
                     }
                 }
             },
             scales: {
-                x: {
-                    title: { display: true, text: 'Current Salary' }
-                },
-                y: {
-                    title: { display: true, text: 'ACE Estimated Salary' }
-                }
+                x: { title: { display: true, text: 'Current Salary' } },
+                y: { title: { display: true, text: 'ACE Estimated Salary' } }
             }
         }
     });
 }
+
+// ---------------- Tabs ----------------
+function openTab(tabId, btn) {
+    document.querySelectorAll(".tabcontent").forEach(c => c.style.display = "none");
+    document.querySelectorAll(".tablink").forEach(b => b.classList.remove("active"));
+
+    document.getElementById(tabId).style.display = "block";
+    btn.classList.add("active");
+
+    if (tabId === "graph" && window.salaryChartInstance) window.salaryChartInstance.update();
+}
+
+// Open Home tab by default
+document.addEventListener("DOMContentLoaded", () => {
+    document.querySelector(".tablink").click();
+});
