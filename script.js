@@ -68,14 +68,14 @@ function loadCSV() {
 let gmData = {}; // team -> GM name
 
 function loadGMCSV() {
-    Papa.parse("GMs.csv", {
+    Papa.parse("gms.csv", {
         download: true,
         header: true,
         skipEmptyLines: true,
         complete: function(data) {
             data.data.forEach(row => {
                 const team = (row.Team || "").trim();
-                const gm = (row.GM || "").trim() || "Unknown";
+                const gm = (row.gm || "").trim() || "Unknown";
                 if (team) gmData[team] = gm;
             });
 
