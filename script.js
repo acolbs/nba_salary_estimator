@@ -75,8 +75,8 @@ function loadGMCSV() {
         complete: function(data) {
             data.data.forEach(row => {
                 const team = (row.Team || "").trim();
-                const gm = (row.GM || "").trim() || "Unknown";
-                if (team) gmData[team] = gm;
+                const GM = (row.GM || "").trim() || "Unknown";
+                if (team) gmData[team] = GM;
             });
 
             // re-render rankings after GM list loads
@@ -304,9 +304,9 @@ function renderGMRankings() {
     });
 
     let rankings = Object.entries(teamMap).map(([team, data]) => {
-        const gm = gmData[team] || "Unknown";
+        const GM = gmData[team] || "Unknown";
         const avgValue = data.count ? data.totalValue / data.count : 0;
-        return { team, gm, count: data.count, avgValue };
+        return { team, GM, count: data.count, avgValue };
     });
 
     // Sort by avgValue first; tie-break by players counted (descending)
@@ -330,7 +330,7 @@ function renderGMRankings() {
         const tr = document.createElement("tr");
         tr.innerHTML = `
             <td>${i + 1}</td>
-            <td>${r.gm}</td>
+            <td>${r.GM}</td>
             <td>${r.team}</td>
             <td>${r.count}</td>
             <td class="${getValueColor(r.avgValue)}">${formatValuePct(r.avgValue)}</td>
