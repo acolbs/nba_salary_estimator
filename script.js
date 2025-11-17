@@ -75,7 +75,7 @@ function loadGMCSV() {
         complete: function(data) {
             data.data.forEach(row => {
                 const team = (row.Team || "").trim();
-                const gm = (row.gm || "").trim() || "Unknown";
+                const gm = (row.GM || "").trim() || "Unknown";
                 if (team) gmData[team] = gm;
             });
 
