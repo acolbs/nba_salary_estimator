@@ -211,7 +211,46 @@ tr:hover {
 }
 
 /* Chart Tab */
+#graphTab {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 20px;
+    justify-content: center;
+}
+
 #graphTab canvas {
-    width: 100% !important;
-    height: auto !important;
+    width: 300px !important;  /* fixed width for each chart */
+    height: 300px !important; /* fixed height */
+    max-width: 100%;
+    background-color: #1e1e1e; /* optional for dark theme consistency */
+    border-radius: 8px;
+}
+/* Team Salary Distribution Charts */
+#teamPieCharts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 24px;
+  justify-content: flex-start;
+}
+
+.chart-wrapper {
+  width: 600px; /* bigger container */
+  height: 600px;
+  padding: 10px;
+  box-sizing: border-box;
+  background-color: #1e1e1e;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.5);
+}
+
+.chart-canvas {
+  width: 100% !important;
+  height: 100% !important;
+}
+
+
+.chart-wrapper h3 {
+  margin: 0 0 8px 0;
+  font-size: 16px;
+  text-align: center;
 }
