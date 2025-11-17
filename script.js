@@ -236,6 +236,7 @@ function updateRosterSummary() {
 }
 
 // ---------------- Salary Chart ----------------
+// ---------------- Salary Chart ----------------
 function renderSalaryChart() {
     const canvas = document.getElementById('salaryChart');
     if (!canvas) return;
@@ -249,36 +250,84 @@ function renderSalaryChart() {
 
     if (window.salaryChartInstance) window.salaryChartInstance.destroy();
 
+    // Determine diagonal line slope for salary = value
+    const maxSalary = Math.max(...dataPoints.map(p => p.x)) * 1.1;
+    const maxACE = Math.max(...dataPoints.map(p => p.y)) * 1.1;
+
     window.salaryChartInstance = new Chart(ctx, {
-    type: 'scatter',
-    data: { datasets: [{ 
-        label: 'Player Salary vs ACE', 
-        data: dataPoints, 
-        pointRadius: 6 
-    }] },
-    options: {
-        responsive: true,
-        plugins: {
-            tooltip: {
-                callbacks: {
-                    label: c => `${c.raw.label}: Real ${money(c.raw.x)}, ACE ${money(c.raw.y)}`
-                }
-            }
+        type: 'scatter',
+        data: {
+            datasets: [{
+                label: 'Player Salary vs ACE',
+                data: dataPoints,
+                pointRadius: 6
+            }]
         },
-        scales: {
-    x: { 
-        title: { display: true, text: 'Current Salary' },
-        ticks: { callback: value => `$${(value/1e6).toFixed(1)}M` } // optional formatting
-    },
-    y: { 
-        title: { display: true, text: 'ACE Estimated Salary' },
-        ticks: { callback: value => `$${(value/1e6).toFixed(1)}M` }
-    }
-}
+        options: {
+            responsive: true,
+            plugins: {
+                tooltip: {
+                    callbacks: {
+                        label: c => `${c.raw.label}: Real ${money(c.raw.x)}, ACE ${money(c.raw.y)}`
+                    }
+                }
+            },
+            scales: {
+                x: { 
+                    title: { display: true, text: 'Current Salary' },
+                    ticks: { callback: value => `$${(value/1e6).toFixed(1)}M` },
+                    min: 0,
+                    max: maxSalary
+                },
+                y: { 
+                    title: { display: true, text: 'ACE Estimated Salary' },
+                    ticks: { callback: value => `$${(value/1e6).toFixed(1)}M` },
+                    min: 0,
+                    max: maxACE
+                }
+            },
+            animation: false
+        },
+        plugins: [{
+            id: 'breakEvenShading',
+            beforeDatasetsDraw(chart) {
+                const {ctx, chartArea: {left, top, right, bottom}, scales: {x, y}} = chart;
+                const maxXY = Math.max(maxSalary, maxACE);
 
-    }
-});
+                ctx.save();
 
+                // GREEN shading ABOVE the line (underpaid players - good value)
+                ctx.fillStyle = 'rgba(0,200,0,0.15)';
+                ctx.beginPath();
+                ctx.moveTo(left, top);
+                ctx.lineTo(x.getPixelForValue(maxXY), y.getPixelForValue(maxXY));
+                ctx.lineTo(x.getPixelForValue(0), y.getPixelForValue(0));
+                ctx.lineTo(left, y.getPixelForValue(0));
+                ctx.closePath();
+                ctx.fill();
+
+                // RED shading BELOW the line (overpaid players)
+                ctx.fillStyle = 'rgba(200,0,0,0.15)';
+                ctx.beginPath();
+                ctx.moveTo(x.getPixelForValue(0), y.getPixelForValue(0));
+                ctx.lineTo(x.getPixelForValue(maxXY), y.getPixelForValue(maxXY));
+                ctx.lineTo(right, bottom);
+                ctx.lineTo(x.getPixelForValue(0), bottom);
+                ctx.closePath();
+                ctx.fill();
+
+                // Diagonal line (draw AFTER shading so it's on top)
+                ctx.beginPath();
+                ctx.moveTo(x.getPixelForValue(0), y.getPixelForValue(0));
+                ctx.lineTo(x.getPixelForValue(maxXY), y.getPixelForValue(maxXY));
+                ctx.strokeStyle = '#000000';
+                ctx.lineWidth = 4;
+                ctx.stroke();
+
+                ctx.restore();
+            }
+        }]
+    });
 }
 
 // ---------------- GM Rankings ----------------

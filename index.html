@@ -70,8 +70,10 @@
 <div class="tab">
     <button class="tablink" onclick="openTab('rosterTab', this)">Roster Builder</button>
     <button class="tablink" onclick="openTab('graphTab', this)">Salary Graph</button>
-    <button class="tablink" onclick="openTab('gmTab', this)">Best GMs</button>
+    <button class="tablink" onclick="openTab('gmTab', this)">GM Rankings</button>
     <button class="tablink" onclick="openTab('teamPieTab', this)">Team Salary Distribution</button>
+    <button class="tablink" onclick="openTab('formulaTab', this)">Formula</button>
+    <button class="tablink" onclick="openTab('simTab', this)">Simulator (Work in Progress)</button>
 </div>
 
 <!-- Roster Builder Tab -->
@@ -184,9 +186,10 @@
 <!-- Salary Graph Tab -->
 <div id="graphTab" class="tabcontent">
     <h2>Salary vs ACE Graph</h2>
+    <p>Players are placed by salary (horizontal axis) and value (vertical axis): top-right are high salary, high value stars; top-left are low salary, high value bargains; bottom-right are high salary, low value overpaid; bottom-left are low salary, low value role players.</p>
     <div style="display: flex; justify-content: center; align-items: center; width: 100%;">
-    <canvas id="salaryChart" style="max-width: 100%; height: 125px;"></canvas>
-</div>
+        <canvas id="salaryChart" style="max-width: 100%; height: 125px;"></canvas>
+    </div>
 </div>
 
 </div>
@@ -331,7 +334,57 @@ function renderTeamPieCharts() {
 renderTeamPieCharts();
 </script>
 
+<!-- Formula Tab -->
+<div id="formulaTab" class="tabcontent">
+    <h2>How the Contract Valuation Formula Works</h2>
+    <p>Our contract valuation engine combines modern performance analytics with real NBA salary distributions to generate accurate, data-driven contract predictions. Here’s a breakdown of the core components:</p>
 
+    <h3>1. Player Impact Score (VALUE₁)</h3>
+    <p>Every player starts with a unified performance rating called <strong>VALUE₁</strong> — a composite metric built from:</p>
+    <ul>
+        <li>Advanced impact statistics (EPM, VORP, on/off)</li>
+        <li>Efficiency (TS%)</li>
+        <li>Defensive metrics</li>
+        <li>Minutes played and durability scaling</li>
+        <li>And more advanced statistics</li>
+    </ul>
+    <p>This creates a single sortable rating that reflects a player’s true on-court value, not just box score numbers.</p>
+
+    <h3>2. Percentile Ranking</h3>
+    <p>Each VALUE₁ score is ranked against the entire league to determine the player’s percentile (0–100%). This rank is the backbone of the valuation model. Higher percentile = higher expected contract tier.</p>
+
+    <h3>3. NBA-Shaped Salary Curve</h3>
+    <p>Instead of guessing contract values or using a simple linear model, the site uses a real NBA salary distribution as the baseline. The curve mimics the actual 2025–26 NBA market:</p>
+    <ul>
+        <li>Top 2%: $55M–$60M</li>
+        <li>Next 6%: $40M–$55M</li>
+        <li>Next 10%: $30M–$40M</li>
+        <li>Next 17%: $20M–$30M</li>
+        <li>Next 30%: $10M–$20M</li>
+        <li>Next 25%: $5M–$10M</li>
+        <li>Bottom 10%: $2.5M–$5M</li>
+    </ul>
+    <p>This ensures the model produces contracts that look and behave like the real NBA economy.</p>
+
+    <h3>4. Tiered Mapping Function</h3>
+    <p>Players are assigned to salary tiers based on percentile, and each tier has a smooth interpolation formula so salaries scale gradually within that tier. Example: A 96th-percentile star doesn’t just jump to $50M — the formula curves him into that range in a mathematically smooth progression. This creates realistic AAVs that match modern contract trends.</p>
+
+    <h3>5. Final Output (Displayed on Site)</h3>
+    <p>Each player receives:</p>
+    <ul>
+        <li>AAV (Average Annual Value)</li>
+        <li>Contract length</li>
+        <li>Total contract amount</li>
+        <li>Relative percentile ranking</li>
+        <li>Salary comparison to real NBA players (if enabled)</li>
+    </ul>
+    <p>All calculated instantly, based on user-controlled settings and the underlying valuation engine.</p>
+</div>
+
+<!-- Simulator Tab -->
+<div id="simTab" class="tabcontent">
+    <h2>Simulate your custom roster to see how you compare to the rest of the league.</h2>
+</div>
 
 
 </body>
