@@ -219,8 +219,6 @@ tr:hover {
 }
 
 #graphTab canvas {
-    width: 300px !important;  /* fixed width for each chart */
-    height: 300px !important; /* fixed height */
     max-width: 100%;
     background-color: #1e1e1e; /* optional for dark theme consistency */
     border-radius: 8px;

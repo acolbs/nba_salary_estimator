@@ -250,23 +250,35 @@ function renderSalaryChart() {
     if (window.salaryChartInstance) window.salaryChartInstance.destroy();
 
     window.salaryChartInstance = new Chart(ctx, {
-        type: 'scatter',
-        data: { datasets: [{ label: 'Player Salary vs ACE', data: dataPoints, /* color left to Chart defaults */ pointRadius: 6 }] },
-        options: {
-            responsive: true,
-            plugins: {
-                tooltip: {
-                    callbacks: {
-                        label: c => `${c.raw.label}: Real ${money(c.raw.x)}, ACE ${money(c.raw.y)}`
-                    }
+    type: 'scatter',
+    data: { datasets: [{ 
+        label: 'Player Salary vs ACE', 
+        data: dataPoints, 
+        pointRadius: 6 
+    }] },
+    options: {
+        responsive: true,
+        plugins: {
+            tooltip: {
+                callbacks: {
+                    label: c => `${c.raw.label}: Real ${money(c.raw.x)}, ACE ${money(c.raw.y)}`
                 }
-            },
-            scales: {
-                x: { title: { display: true, text: 'Current Salary' } },
-                y: { title: { display: true, text: 'ACE Estimated Salary' } }
             }
-        }
-    });
+        },
+        scales: {
+    x: { 
+        title: { display: true, text: 'Current Salary' },
+        ticks: { callback: value => `$${(value/1e6).toFixed(1)}M` } // optional formatting
+    },
+    y: { 
+        title: { display: true, text: 'ACE Estimated Salary' },
+        ticks: { callback: value => `$${(value/1e6).toFixed(1)}M` }
+    }
+}
+
+    }
+});
+
 }
 
 // ---------------- GM Rankings ----------------
