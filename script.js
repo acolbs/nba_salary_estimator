@@ -370,39 +370,43 @@ function renderTeamPieCharts() {
     if (!container) return;
     container.innerHTML = ""; // Clear old charts
 
+    // Fixed bright color palette
+    const brightColors = [
+        "#FF4C4C", "#FFA500", "#FFD700", "#32CD32", "#008000",
+        "#00CED1", "#00FFFF", "#87CEEB", "#0000FF", "#800080",
+        "#FF00FF", "#FF69B4", "#A52A2A", "#FFD700", "#FF8C00"
+    ];
+
+    // Group players by team
     const teamMap = {};
     [...players, ...roster].forEach(p => {
         const team = (p.Tm || "Unknown").replace(/\s*\d+TM/gi, "").trim();
+        if (!team || team === "Unknown") return;
         if (!teamMap[team]) teamMap[team] = [];
         teamMap[team].push(p);
     });
 
-    Object.entries(teamMap).forEach(([team, teamPlayers], i) => {
-        const totalSalary = teamPlayers.reduce((sum, p) => sum + p.SALARY, 0);
-        const totalACE = teamPlayers.reduce((sum, p) => sum + p.ACE, 0);
-
-        // Convert percentages to numbers for proper tooltip matching
-        const currentPercentages = teamPlayers.map(p => (p.SALARY / totalSalary) * 100);
-        const estimatedPercentages = teamPlayers.map(p => (p.ACE / totalACE) * 100);
+    Object.entries(teamMap).forEach(([team, teamPlayers]) => {
         const labels = teamPlayers.map(p => p.Player);
 
-        // Generate consistent colors per player
+        // Percentages for pie charts
+        const totalSalary = teamPlayers.reduce((sum, p) => sum + p.SALARY, 0);
+        const totalACE = teamPlayers.reduce((sum, p) => sum + p.ACE, 0);
+        const currentData = teamPlayers.map(p => (p.SALARY / totalSalary) * 100);
+        const estimatedData = teamPlayers.map(p => (p.ACE / totalACE) * 100);
+
+        // Assign colors from brightColors cyclically
         const colorMap = {};
-        labels.forEach(player => {
-            const r = Math.floor(Math.random() * 200);
-            const g = Math.floor(Math.random() * 200);
-            const b = Math.floor(Math.random() * 200);
-            colorMap[player] = `rgba(${r},${g},${b},0.7)`;
+        labels.forEach((player, i) => {
+            colorMap[player] = brightColors[i % brightColors.length];
         });
         const colors = labels.map(p => colorMap[p]);
 
-        // Wrapper div
-        // Outer wrapper for team pair
+        // Outer wrapper rectangle
         const wrapper = document.createElement('div');
         wrapper.style.display = 'flex';
-        wrapper.style.flexDirection = 'row';
-        wrapper.style.justifyContent = 'space-around';
-        wrapper.style.alignItems = 'center';
+        wrapper.style.alignItems = 'flex-start';
+        wrapper.style.justifyContent = 'space-between';
         wrapper.style.padding = '16px';
         wrapper.style.border = '2px solid #444';
         wrapper.style.borderRadius = '12px';
@@ -414,55 +418,82 @@ function renderTeamPieCharts() {
         currentDiv.style.textAlign = 'center';
         const currentTitle = document.createElement('h4');
         currentTitle.textContent = team + " - Current";
-        currentDiv.appendChild(currentTitle);
+        currentTitle.style.margin = "0 0 12px 0";
         const canvasCurrent = document.createElement('canvas');
         canvasCurrent.width = 250;
         canvasCurrent.height = 250;
+        currentDiv.appendChild(currentTitle);
         currentDiv.appendChild(canvasCurrent);
+
+        // Legend between charts
+        const legendDiv = document.createElement('div');
+        legendDiv.style.color = '#fff';
+        legendDiv.style.fontSize = '14px';
+        legendDiv.style.margin = '0 16px';
+        legendDiv.style.whiteSpace = 'pre-line';
+        labels.forEach(player => {
+            const line = document.createElement('div');
+            line.textContent = `■ ${player}`;
+            line.style.color = colorMap[player];
+            legendDiv.appendChild(line);
+        });
 
         // Estimated chart
         const estDiv = document.createElement('div');
         estDiv.style.textAlign = 'center';
         const estTitle = document.createElement('h4');
         estTitle.textContent = team + " - Estimated";
-        estDiv.appendChild(estTitle);
+        estTitle.style.margin = "0 0 12px 0";
         const canvasEstimated = document.createElement('canvas');
         canvasEstimated.width = 250;
         canvasEstimated.height = 250;
+        estDiv.appendChild(estTitle);
         estDiv.appendChild(canvasEstimated);
 
+        // Append all to wrapper
         wrapper.appendChild(currentDiv);
+        wrapper.appendChild(legendDiv);
         wrapper.appendChild(estDiv);
         container.appendChild(wrapper);
 
-
-        // Current salary pie
+        // Current salary pie (percentages)
         new Chart(canvasCurrent.getContext('2d'), {
             type: 'pie',
-            data: { labels, datasets: [{ data: currentPercentages, backgroundColor: colors, borderWidth: 1 }] },
+            data: { labels, datasets: [{ data: currentData, backgroundColor: colors, borderWidth: 1 }] },
             options: {
                 responsive: false,
                 plugins: {
                     legend: { display: false },
-                    tooltip: { callbacks: { label: ctx => `${ctx.label}: ${ctx.raw.toFixed(1)}%` } }
+                    tooltip: {
+                        callbacks: {
+                            label: ctx => `${ctx.label}: ${ctx.raw.toFixed(1)}%`
+                        }
+                    }
                 }
             }
         });
 
-        // Estimated salary pie
+        // Estimated salary pie (percentages)
         new Chart(canvasEstimated.getContext('2d'), {
             type: 'pie',
-            data: { labels, datasets: [{ data: estimatedPercentages, backgroundColor: colors, borderWidth: 1 }] },
+            data: { labels, datasets: [{ data: estimatedData, backgroundColor: colors, borderWidth: 1 }] },
             options: {
                 responsive: false,
                 plugins: {
                     legend: { display: false },
-                    tooltip: { callbacks: { label: ctx => `${ctx.label}: ${ctx.raw.toFixed(1)}%` } }
+                    tooltip: {
+                        callbacks: {
+                            label: ctx => `${ctx.label}: ${ctx.raw.toFixed(1)}%`
+                        }
+                    }
                 }
             }
         });
     });
 }
+
+
+
 
 
 
